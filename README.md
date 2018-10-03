@@ -1,5 +1,5 @@
 
-# SQL XT
+# SQLex
 
 ### Language Specifications
 ## What is Sqlex?
