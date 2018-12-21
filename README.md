@@ -2,8 +2,8 @@
 # SQLex
 
 ### Language Specifications
-## What is Sqlex?
-Sqlex is a template engine to generate SQL statements for querying data or calculating count with respect to given parameters, order by conditions.It is based on apache velocity, please check Apache Velocity Library documentation for language specifications. This library is only generates SQL statements.
+## What is SQLex?
+SQLex is a template engine to generate SQL statements for querying data or calculating count with respect to given parameters, order by conditions.It is based on apache velocity, please check Apache Velocity Library documentation for language specifications. This library is only generates SQL statements.
 
  
 ## Development
@@ -99,7 +99,7 @@ select x.id,x.txt from foo x where x.id is not null; --valid
 select x.id,x.txt from foo x where x.id =?; --invalid
 ```
 
-### All region
+### All regions
 ```sql
 select 
     #region(“data”) x.id,x.txt,fnc_sample(#p(xid)) #end
@@ -174,33 +174,6 @@ order by x.id
     #end
 #end
 ```
-
-### Multi Data Region
-```sql
-#region(“data”) select 
-        x.id,y.dsc 
-    from 
-        foo x 
-    left join 
-        sample table y 
-    on 
-        x.id=y.id 
-    #region(“where”)  
-        #param(“xid”) #and() x.id=? #end 
-    #end
-#end
-#region(“count”) select 
-        1 
-    from 
-        foo x 
-    #region(“where”)  
-    #param(“xid”) #and() x.id=? #end 
-    #end
-#end
-#region(“data”)
-    #region(“orderby”)x.id#end
-#end
-```
 ### Parameters with replacement specifier
 ```sql
 select 
@@ -214,7 +187,7 @@ where
     #param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ #end
 #region(“orderby”) x.id#end
 ```
-### Nested Parameters
+### Nested parameters
 ```sql
 select 
     #region(“data”) x.id,x.txt #end 
@@ -228,7 +201,7 @@ where
     #end
 #region(“orderby”) x.id #end
 ```
-### Required Parameters
+### Required parameters
 ```sql
 select 
     #region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
