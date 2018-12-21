@@ -3,7 +3,8 @@
 
 ### Language Specifications
 ## What is Sqlex?
-Sqlex is SQL templating language based on Apache Velocity templating engine.
+Sqlex is a template engine to generate SQL statements for querying data or calculating count with respect to given parameters, order by conditions.It is based on apache velocity, please check Apache Velocity Library documentation for language specifications. This library is only generates SQL statements.
+
  
 ## Development
 
@@ -13,7 +14,32 @@ here](a%C5%9Fsldk%C5%9Falskd%C5%9Flksad)
 
 ## Prerequisites
 
-Sqlex library depends only Apache Velocity 0.7 library. Compiled with Java  1.8
+SQLex library depends only Apache Velocity 0.7 library. Compiled with Java  1.8
+
+## Defined Directives
+
+### #region(“data”)
+This region’s content is only included when query is executing for data. While count query SQL code generation this part will be omitted.
+
+### #region(“count”)
+This region’s content is only included when query is executing for count. While data query SQL code generation this part will be omitted.
+	
+### #region(“where”)
+This region’s content is always evaluated. If content is not empty, SQL’s “where“ closure and than the content are written into result SQL statement.
+	
+### #region(“orderby”)
+If _orderby velocity template parameter is defined, _orderby parameter is used instead of region content.
+	
+### #and() directive
+And directive skip first occurrence in containing region and for other occurrences append “and” operator to SQL statement.
+
+### #param(name,replacement)
+Optional parameter directive. It’s content will evaluated and included if specified parameter exists in parameters list. When SQL code generation replacement will be replaced with “?” and Velocity template parameter with “name” name is registered as SQL parameter.
+
+If replacement is not used “?” is used as parameters holder.
+
+### #p(name) directive
+Required parameter directive.  It will be replaced by “?” in execution.
 
 ## Basic usage
 
@@ -65,16 +91,171 @@ where hr.id=?  LIMIT ?  OFFSET ?  [test_id,50,0]
 
 ## Examples
 
+### SQL as SQLex
+Any SQL statement (without parameters) is already SQLex.
+
 ```sql
-select
-	#region('data') * #end
-	#region('count') 1 #end
-from hr
-#region('where')
-	#param('id') #and hr.id=? #end
-	#param('id2') #and hr.id2=? #end
+select x.id,x.txt from sample_table x where x.id is not null; --valid
+select x.id,x.txt from sample_table x where x.id =?; --invalid
+```
+
+### All region
+```sql
+select 
+	#region(“data”) x.id,x.txt,fnc_sample(#p(xid)) #end
+	#region(“count”)count(1)#end 
+from 
+	sample_table x
+#region(“where”) 
+	#param(“xid”) #and() x.id=?#end
+	#param(“xtxt”) #and() x.txt like ?||’%’ #end
+#end
+#region(“orderby”) x.id #end 
+```
+### Sort insensitive
+```sql
+select 
+	#region(“data”) x.id,x.txt #end
+	#region(“count”)count(1)#end 
+from 
+	sample_table x
+#region(“where”) 
+	#param(“xid”) #and() x.id=?#end
+	#param(“xtxt”) #and() x.txt like ?||’%’ #end
+#end
+order by x.id
+```
+### Data Only WQL:
+```sql
+select 
+	x.id,x.txt
+from 
+	sample_table x
+#region(“where”) 
+	#param(“xid”) #and() x.id=?#end
+	#param(“xtxt”) #and() x.txt like ?||’%’ #end
+#end
+order by x.id
+```
+
+### Without where region
+```sql
+select 
+	x.id,x.txt
+from 
+	sample_table x
+where
+	x.id is not null 
+	#param(“xid”) and x.id=?#end
+	#param(“xtxt”) and x.txt like ?||’%’ #end
+order by x.id
+```
+### Nested Regions
+```sql
+#region(“data”) select 
+		x.id,y.dsc 
+	from 
+		sample_table x 
+	left 
+		join sample table y 
+	on 
+		x.id=y.id 
+	#region(“where”)  
+		#param(“xid”) x.id=? #end
+	#end 
+	#region(“orderby”)x.id#end 
+#end
+#region(“count”) select 
+		1 
+	from 
+		sample_table x 
+	#region(“where”)  
+		#param(“xid”) x.id=? #end 
+	#end
 #end
 ```
+
+### Multi Data Region
+```sql
+#region(“data”) select 
+		x.id,y.dsc 
+	from 
+		sample_table x 
+	left join 
+		sample table y 
+	on 
+		x.id=y.id 
+	#region(“where”)  
+		#param(“xid”) #and() x.id=? #end 
+	#end
+#end
+#region(“count”) select 
+		1 
+	from 
+		sample_table x 
+	#region(“where”)  
+	#param(“xid”) #and() x.id=? #end 
+	#end
+#end
+#region(“data”)
+	#region(“orderby”)x.id#end
+#end
+```
+### Parameters with replacement specifier
+```sql
+select 
+	#region(“data”) x.id,x.txt #end 
+	#region(“count”)count(1)#end 
+from 
+	sample_table x
+where 
+	x.id is not null 
+	#param(“xid”,”:xid”) and x.id=:xid#end
+	#param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ #end
+#region(“orderby”) x.id#end
+```
+### Nested Parameters
+```sql
+select 
+	#region(“data”) x.id,x.txt #end 
+	#region(“count”)count(1)#end 
+from 
+	sample_table x
+where 
+	x.id is not null 
+	#param(“xid”,”:xid”) 
+		#param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ and x.id=:xid#end
+	#end
+#region(“orderby”) x.id #end
+```
+### Required Parameters WQL
+```sql
+select 
+	#region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
+	#region(“count”)count(1)#end 
+from 
+	sample_table x
+where 
+	x.id is not null 
+	#param(“xid”,”:xid”) 
+		#param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ and x.id=:xid#end
+	#end
+#region(“orderby”) x.id#end
+
+````
+### Parameter with multi replacement WQL
+```sql
+select 
+	#region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
+	#region(“count”)count(1)#end 
+from 
+	sample_table x
+where 
+	x.id is not null 
+	#param(“xid”) (x.id=? or x.dsc=?)#end
+	#region(“orderby”) x.id#end
+```
+
 ## Authors and Contributors
 
 ## Support
