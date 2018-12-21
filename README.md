@@ -23,13 +23,13 @@ This region’s content is only included when query is executing for data. While
 
 ### #region(“count”)
 This region’s content is only included when query is executing for count. While data query SQL code generation this part will be omitted.
-	
+    
 ### #region(“where”)
 This region’s content is always evaluated. If content is not empty, SQL’s “where“ closure and than the content are written into result SQL statement.
-	
+    
 ### #region(“orderby”)
 If _orderby velocity template parameter is defined, _orderby parameter is used instead of region content.
-	
+    
 ### #and() directive
 And directive skip first occurrence in containing region and for other occurrences append “and” operator to SQL statement.
 
@@ -55,38 +55,38 @@ import com.hrtit.sqlex.dialects.PostgresqlDialect;
 
 public class DemoCode {
 
-	static public void main(String args[]){
-		SqlexProcessor processor=new SqlexProcessor();
-		processor.setDialect(new PostgresqlDialect());
-		
-		Map<String,Object> params=new HashMap<>();
-		params.put("id", "test_id");
-		SqlexQuery query=new SqlexQuery();
-		query.setQuery("select\n"+
-			"  #region('data') * #end \n"+
-			"  #region('count') 1 #end \n"+
-			"from hr\n"+
-			"#region('where')\n"+
-			"  #param('id') #and hr.id=? #end\n"+
-			"  #param('id2') #and hr.id2=? #end\n"+
-			"#end"
-		);
+    static public void main(String args[]){
+        SqlexProcessor processor=new SqlexProcessor();
+        processor.setDialect(new PostgresqlDialect());
+        
+        Map<String,Object> params=new HashMap<>();
+        params.put("id", "test_id");
+        SqlexQuery query=new SqlexQuery();
+        query.setQuery("select\n"+
+            "  #region('data') * #end \n"+
+            "  #region('count') 1 #end \n"+
+            "from foo\n"+
+            "#region('where')\n"+
+            "  #param('id') #and foo.id=? #end\n"+
+            "  #param('id2') #and foo.id2=? #end\n"+
+            "#end"
+        );
 
-		query.setParams(params);
-		query.setFetchCount(50);
-		query.setStartNumber(0);	
-		SqlexResult c= processor.prepareDataQuery(query);
-		System.out.println(c.toString());
-	}
-	
+        query.setParams(params);
+        query.setFetchCount(50);
+        query.setStartNumber(0);    
+        SqlexResult c= processor.prepareDataQuery(query);
+        System.out.println(c.toString());
+    }
+    
 }
 ```
 Result:
 
 ```sql
 select
-* from hr
-where hr.id=?  LIMIT ?  OFFSET ?  [test_id,50,0]
+* from foo
+where foo.id=?  LIMIT ?  OFFSET ?  [test_id,50,0]
 ```
 
 ## Examples
@@ -95,45 +95,45 @@ where hr.id=?  LIMIT ?  OFFSET ?  [test_id,50,0]
 Any SQL statement (without parameters) is already SQLex.
 
 ```sql
-select x.id,x.txt from sample_table x where x.id is not null; --valid
-select x.id,x.txt from sample_table x where x.id =?; --invalid
+select x.id,x.txt from foo x where x.id is not null; --valid
+select x.id,x.txt from foo x where x.id =?; --invalid
 ```
 
 ### All region
 ```sql
 select 
-	#region(“data”) x.id,x.txt,fnc_sample(#p(xid)) #end
-	#region(“count”)count(1)#end 
+    #region(“data”) x.id,x.txt,fnc_sample(#p(xid)) #end
+    #region(“count”)count(1)#end 
 from 
-	sample_table x
+    foo x
 #region(“where”) 
-	#param(“xid”) #and() x.id=?#end
-	#param(“xtxt”) #and() x.txt like ?||’%’ #end
+    #param(“xid”) #and() x.id=?#end
+    #param(“xtxt”) #and() x.txt like ?||’%’ #end
 #end
 #region(“orderby”) x.id #end 
 ```
 ### Sort insensitive
 ```sql
 select 
-	#region(“data”) x.id,x.txt #end
-	#region(“count”)count(1)#end 
+    #region(“data”) x.id,x.txt #end
+    #region(“count”)count(1)#end 
 from 
-	sample_table x
+    foo x
 #region(“where”) 
-	#param(“xid”) #and() x.id=?#end
-	#param(“xtxt”) #and() x.txt like ?||’%’ #end
+    #param(“xid”) #and() x.id=?#end
+    #param(“xtxt”) #and() x.txt like ?||’%’ #end
 #end
 order by x.id
 ```
-### Data Only WQL:
+### Data Only
 ```sql
 select 
-	x.id,x.txt
+    x.id,x.txt
 from 
-	sample_table x
+    foo x
 #region(“where”) 
-	#param(“xid”) #and() x.id=?#end
-	#param(“xtxt”) #and() x.txt like ?||’%’ #end
+    #param(“xid”) #and() x.id=?#end
+    #param(“xtxt”) #and() x.txt like ?||’%’ #end
 #end
 order by x.id
 ```
@@ -141,119 +141,119 @@ order by x.id
 ### Without where region
 ```sql
 select 
-	x.id,x.txt
+    x.id,x.txt
 from 
-	sample_table x
+    foo x
 where
-	x.id is not null 
-	#param(“xid”) and x.id=?#end
-	#param(“xtxt”) and x.txt like ?||’%’ #end
+    x.id is not null 
+    #param(“xid”) and x.id=?#end
+    #param(“xtxt”) and x.txt like ?||’%’ #end
 order by x.id
 ```
 ### Nested Regions
 ```sql
 #region(“data”) select 
-		x.id,y.dsc 
-	from 
-		sample_table x 
-	left 
-		join sample table y 
-	on 
-		x.id=y.id 
-	#region(“where”)  
-		#param(“xid”) x.id=? #end
-	#end 
-	#region(“orderby”)x.id#end 
+        x.id,y.dsc 
+    from 
+        foo x 
+    left 
+        join sample table y 
+    on 
+        x.id=y.id 
+    #region(“where”)  
+        #param(“xid”) x.id=? #end
+    #end 
+    #region(“orderby”)x.id#end 
 #end
 #region(“count”) select 
-		1 
-	from 
-		sample_table x 
-	#region(“where”)  
-		#param(“xid”) x.id=? #end 
-	#end
+        1 
+    from 
+        foo x 
+    #region(“where”)  
+        #param(“xid”) x.id=? #end 
+    #end
 #end
 ```
 
 ### Multi Data Region
 ```sql
 #region(“data”) select 
-		x.id,y.dsc 
-	from 
-		sample_table x 
-	left join 
-		sample table y 
-	on 
-		x.id=y.id 
-	#region(“where”)  
-		#param(“xid”) #and() x.id=? #end 
-	#end
+        x.id,y.dsc 
+    from 
+        foo x 
+    left join 
+        sample table y 
+    on 
+        x.id=y.id 
+    #region(“where”)  
+        #param(“xid”) #and() x.id=? #end 
+    #end
 #end
 #region(“count”) select 
-		1 
-	from 
-		sample_table x 
-	#region(“where”)  
-	#param(“xid”) #and() x.id=? #end 
-	#end
+        1 
+    from 
+        foo x 
+    #region(“where”)  
+    #param(“xid”) #and() x.id=? #end 
+    #end
 #end
 #region(“data”)
-	#region(“orderby”)x.id#end
+    #region(“orderby”)x.id#end
 #end
 ```
 ### Parameters with replacement specifier
 ```sql
 select 
-	#region(“data”) x.id,x.txt #end 
-	#region(“count”)count(1)#end 
+    #region(“data”) x.id,x.txt #end 
+    #region(“count”)count(1)#end 
 from 
-	sample_table x
+    foo x
 where 
-	x.id is not null 
-	#param(“xid”,”:xid”) and x.id=:xid#end
-	#param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ #end
+    x.id is not null 
+    #param(“xid”,”:xid”) and x.id=:xid#end
+    #param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ #end
 #region(“orderby”) x.id#end
 ```
 ### Nested Parameters
 ```sql
 select 
-	#region(“data”) x.id,x.txt #end 
-	#region(“count”)count(1)#end 
+    #region(“data”) x.id,x.txt #end 
+    #region(“count”)count(1)#end 
 from 
-	sample_table x
+    foo x
 where 
-	x.id is not null 
-	#param(“xid”,”:xid”) 
-		#param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ and x.id=:xid#end
-	#end
+    x.id is not null 
+    #param(“xid”,”:xid”) 
+        #param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ and x.id=:xid#end
+    #end
 #region(“orderby”) x.id #end
 ```
-### Required Parameters WQL
+### Required Parameters
 ```sql
 select 
-	#region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
-	#region(“count”)count(1)#end 
+    #region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
+    #region(“count”)count(1)#end 
 from 
-	sample_table x
+    foo x
 where 
-	x.id is not null 
-	#param(“xid”,”:xid”) 
-		#param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ and x.id=:xid#end
-	#end
+    x.id is not null 
+    #param(“xid”,”:xid”) 
+        #param(“xtxt”,”:xtxt) and x.txt like :xtxt||’%’ and x.id=:xid#end
+    #end
 #region(“orderby”) x.id#end
 
 ````
-### Parameter with multi replacement WQL
+### Parameter with multi replacement
 ```sql
 select 
-	#region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
-	#region(“count”)count(1)#end 
+    #region(“data”) x.id,x.txt,fnc_sample(#p(“xrequired”)) #end 
+    #region(“count”)count(1)#end 
 from 
-	sample_table x
+    foo x
 where 
-	x.id is not null 
-	#param(“xid”) (x.id=? or x.dsc=?)#end
-	#region(“orderby”) x.id#end
+    x.id is not null 
+    #param(“xid”) (x.id=? or x.dsc=?)#end
+    #region(“orderby”) x.id#end
 ```
 
 ## Authors and Contributors
